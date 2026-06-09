@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>にほんご — Tarjetas de vocabulario</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8;
+    --surface: #ffffff;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b66;
+    --text-hint: #9b9b94;
+    --border: rgba(0,0,0,0.09);
+    --border-md: rgba(0,0,0,0.14);
+    --accent: #c0392b;
+    --accent-soft: #fdf0ef;
+    --correct: #1a7a4a;
+    --correct-bg: #edf7f1;
+    --wrong: #c0392b;
+    --wrong-bg: #fdf0ef;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141412;
+      --surface: #1e1e1c;
+      --text-primary: #f0efe8;
+      --text-secondary: #9b9b94;
+      --text-hint: #6b6b66;
+      --border: rgba(255,255,255,0.08);
+      --border-md: rgba(255,255,255,0.13);
+      --accent-soft: #2a1a19;
+      --correct-bg: #0f2a1c;
+      --wrong-bg: #2a1512;
+    }
+  }
+
+  body {
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 1.5rem 2rem 1rem;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .header-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .header-title span {
+    color: var(--accent);
+    font-size: 1.3rem;
+  }
+
+  .header-sub {
+    font-size: 0.8rem;
+    color: var(--text-hint);
+    letter-spacing: 0.04em;
+  }
+
+  .main-layout {
+    display: flex;
+    flex: 1;
+    gap: 0;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    border-right: 0.5px solid var(--border);
+    padding: 1.25rem 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-label {
+    font-size: 0.7rem;
+    color: var(--text-hint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0 1.25rem 0.6rem;
+  }
+
+  .lesson-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    line-height: 1.4;
+  }
+
+  .lesson-btn:hover { background: var(--border); color: var(--text-primary); }
+
+  .lesson-btn.active {
+    color: var(--accent);
+    font-weight: 500;
+    background: var(--accent-soft);
+  }
+
+  .lesson-btn .jp { font-size: 0.75rem; display: block; opacity: 0.7; }
+
+  .lesson-btn .count {
+    font-size: 0.7rem;
+    color: var(--text-hint);
+    float: right;
+    margin-top: 1px;
+  }
+
+  /* Main area */
+  .quiz-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2.5rem 2rem;
+    gap: 1.5rem;
+  }
+
+  /* Progress */
+  .progress-row {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--border-md);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.35s ease;
+  }
+
+  .progress-text {
+    font-size: 0.75rem;
+    color: var(--text-hint);
+    white-space: nowrap;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* Stats */
+  .stats-row {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .stat {
+    flex: 1;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+    color: var(--text-hint);
+    margin-top: 1px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .stat-val.correct { color: var(--correct); }
+  .stat-val.wrong { color: var(--wrong); }
+
+  /* Card */
+  .card-container {
+    width: 100%;
+    max-width: 520px;
+    perspective: 1000px;
+  }
+
+  .flash-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: transform 0.1s;
+  }
+
+  .card-lesson-tag {
+    position: absolute;
+    top: 1rem;
+    left: 1.25rem;
+    font-size: 0.65rem;
+    color: var(--text-hint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card-type-badge {
+    position: absolute;
+    top: 0.85rem;
+    right: 1.25rem;
+    font-size: 0.6rem;
+    color: var(--text-hint);
+    letter-spacing: 0.04em;
+    border: 0.5px solid var(--border-md);
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+
+  .word-jp {
+    font-size: 2.6rem;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.05em;
+  }
+
+  .word-romaji {
+    font-size: 0.85rem;
+    color: var(--text-hint);
+    letter-spacing: 0.08em;
+    margin-top: 0.25rem;
+    transition: opacity 0.2s;
+  }
+
+  .word-romaji.hidden {
+    opacity: 0;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .romaji-toggle {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .romaji-toggle-label {
+    font-size: 0.75rem;
+    color: var(--text-hint);
+    letter-spacing: 0.03em;
+  }
+
+  .toggle-track {
+    width: 32px;
+    height: 18px;
+    background: var(--border-md);
+    border-radius: 9px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle-track.on { background: var(--accent); }
+
+  .toggle-thumb {
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s;
+  }
+
+  .toggle-track.on .toggle-thumb { transform: translateX(14px); }
+
+  /* Options */
+  .options-grid {
+    width: 100%;
+    max-width: 520px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .option-btn {
+    background: var(--surface);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.4;
+    transition: background 0.12s, border-color 0.12s, transform 0.08s;
+    position: relative;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    background: var(--border);
+    border-color: var(--border-md);
+    transform: translateY(-1px);
+  }
+
+  .option-btn:active:not(:disabled) { transform: scale(0.98); }
+
+  .option-btn.selected-correct {
+    background: var(--correct-bg);
+    border-color: var(--correct);
+    color: var(--correct);
+  }
+
+  .option-btn.selected-wrong {
+    background: var(--wrong-bg);
+    border-color: var(--wrong);
+    color: var(--wrong);
+  }
+
+  .option-btn.reveal-correct {
+    background: var(--correct-bg);
+    border-color: var(--correct);
+    color: var(--correct);
+  }
+
+  .option-btn:disabled { cursor: default; }
+
+  .option-letter {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text-hint);
+    margin-right: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* Feedback */
+  .feedback-row {
+    width: 100%;
+    max-width: 520px;
+    min-height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .feedback-msg {
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+
+  .feedback-msg.correct { color: var(--correct); }
+  .feedback-msg.wrong { color: var(--wrong); }
+
+  .next-btn {
+    background: var(--text-primary);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .next-btn.visible { opacity: 1; pointer-events: all; }
+  .next-btn:hover { opacity: 0.8; }
+
+  /* Loading state */
+  .loading-dots {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .loading-dots span {
+    width: 5px;
+    height: 5px;
+    background: var(--text-hint);
+    border-radius: 50%;
+    animation: dot-pulse 1.2s ease-in-out infinite;
+  }
+
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dot-pulse {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Complete screen */
+  .complete-screen {
+    width: 100%;
+    max-width: 520px;
+    background: var(--surface);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .complete-screen.show { display: flex; }
+
+  .complete-jp { font-size: 2.5rem; letter-spacing: 0.1em; }
+  .complete-title { font-size: 1rem; color: var(--text-secondary); }
+  .complete-score { font-size: 2.2rem; font-weight: 500; color: var(--correct); }
+
+  .restart-btn {
+    margin-top: 0.5rem;
+    background: none;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 1.5rem;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background 0.12s;
+  }
+
+  .restart-btn:hover { background: var(--border); }
+
+  .error-notice {
+    font-size: 0.75rem;
+    color: var(--text-hint);
+    max-width: 520px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 620px) {
+    .sidebar { display: none; }
+    .options-grid { grid-template-columns: 1fr; }
+    .quiz-area { padding: 1.5rem 1rem; }
+    .word-jp { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title"><span>に</span>ほんご 45じかん — Vocabulario</div>
+  <div class="header-sub">Nihongo 45 jikan · Tarjetas de estudio</div>
+  <div class="romaji-toggle" onclick="toggleRomaji()" title="Mostrar u ocultar la romanización">
+    <span class="romaji-toggle-label">Romanización</span>
+    <div class="toggle-track on" id="romajiTrack">
+      <div class="toggle-thumb"></div>
+    </div>
+  </div>
+</header>
+
+<div class="main-layout">
+  <nav class="sidebar" id="sidebar"></nav>
+
+  <main class="quiz-area" id="quizArea">
+    <div class="progress-row">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-text" id="progressText">0 / 0</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val correct" id="statCorrect">0</div><div class="stat-label">Correctas</div></div>
+      <div class="stat"><div class="stat-val wrong" id="statWrong">0</div><div class="stat-label">Errores</div></div>
+      <div class="stat"><div class="stat-val" id="statPct">—</div><div class="stat-label">Precisión</div></div>
+    </div>
+
+    <div class="card-container">
+      <div class="flash-card" id="flashCard">
+        <div class="card-lesson-tag" id="cardLesson"></div>
+        <div class="card-type-badge" id="cardType"></div>
+        <div class="word-jp" id="wordJp">…</div>
+        <div class="word-romaji" id="wordRomaji"></div>
+      </div>
+    </div>
+
+    <div class="options-grid" id="optionsGrid"></div>
+
+    <div class="feedback-row">
+      <div class="feedback-msg" id="feedbackMsg"></div>
+      <button class="next-btn" id="nextBtn" onclick="nextCard()">Siguiente →</button>
+    </div>
+
+    <div class="complete-screen" id="completeScreen">
+      <div class="complete-jp">おわり</div>
+      <div class="complete-title">¡Lección completada!</div>
+      <div class="complete-score" id="completeSc"></div>
+      <button class="restart-btn" onclick="restartLesson()">Repetir lección</button>
+    </div>
+
+    <p class="error-notice" id="errorNotice" style="display:none"></p>
+  </main>
+</div>
+
+<script>
+const VOCAB = {
+  "あいさつ": {
+    label: "Saludos",
+    words: [
+      { jp: "おはようございます", romaji: "ohayoo gozaimasu", es: "Buenos días", type: "saludo" },
+      { jp: "こんにちは", romaji: "konnichiwa", es: "Buenas tardes / Hola", type: "saludo" },
+      { jp: "こんばんは", romaji: "konbanwa", es: "Buenas noches", type: "saludo" },
+      { jp: "おやすみなさい", romaji: "oyasuminasai", es: "Buenas noches (al dormir)", type: "saludo" },
+      { jp: "さようなら", romaji: "sayoonara", es: "Adiós", type: "saludo" },
+      { jp: "ありがとうございます", romaji: "arigatoo gozaimasu", es: "Muchas gracias", type: "saludo" },
+      { jp: "どういたしまして", romaji: "dooitashimashite", es: "De nada", type: "saludo" },
+      { jp: "いただきます", romaji: "itadakimasu", es: "Buen provecho (antes de comer)", type: "saludo" },
+      { jp: "ごちそうさまでした", romaji: "gochisoosamadeshita", es: "Gracias por la comida", type: "saludo" },
+      { jp: "いってまいります", romaji: "ittemairimasu", es: "Ya me voy (al salir de casa)", type: "saludo" },
+      { jp: "いってらっしゃい", romaji: "itterasshai", es: "Hasta luego (respuesta al que sale)", type: "saludo" },
+      { jp: "ただいま", romaji: "tadaima", es: "Ya llegué (al llegar a casa)", type: "saludo" },
+      { jp: "おかえりなさい", romaji: "okaerinasai", es: "Bienvenido (respuesta al que llega)", type: "saludo" },
+      { jp: "はじめまして", romaji: "hajimemashite", es: "Encantado de conocerte", type: "saludo" },
+      { jp: "どうぞ よろしく", romaji: "doozo yoroshiku", es: "Mucho gusto", type: "saludo" },
+      { jp: "すみません", romaji: "sumimasen", es: "Disculpe / perdón", type: "expresión" },
+      { jp: "もう いちど おねがいします", romaji: "moo ichido onegaishimasu", es: "Una vez más, por favor", type: "expresión" },
+      { jp: "ゆっくり おねがいします", romaji: "yukkuri onegaishimasu", es: "Más despacio, por favor", type: "expresión" },
+    ]
+  },
+  "だい１": {
+    label: "Lección 1 — Presentaciones",
+    words: [
+      { jp: "せんせい", romaji: "sensee", es: "Profesor / maestra", type: "sustantivo" },
+      { jp: "がくせい", romaji: "gakusee", es: "Estudiante", type: "sustantivo" },
+      { jp: "かいしゃいん", romaji: "kaishain", es: "Empleado de oficina", type: "sustantivo" },
+      { jp: "なまえ", romaji: "namae", es: "Nombre", type: "sustantivo" },
+      { jp: "くに", romaji: "kuni", es: "País", type: "sustantivo" },
+      { jp: "しごと", romaji: "shigoto", es: "Trabajo / empleo", type: "sustantivo" },
+      { jp: "ほん", romaji: "hon", es: "Libro", type: "sustantivo" },
+      { jp: "えんぴつ", romaji: "enpitsu", es: "Lápiz", type: "sustantivo" },
+      { jp: "ボールペン", romaji: "boorupen", es: "Bolígrafo", type: "sustantivo" },
+      { jp: "ノート", romaji: "nooto", es: "Cuaderno", type: "sustantivo" },
+      { jp: "じしょ", romaji: "jisho", es: "Diccionario", type: "sustantivo" },
+      { jp: "しんぶん", romaji: "shinbun", es: "Periódico", type: "sustantivo" },
+      { jp: "にほんご", romaji: "nihongo", es: "Idioma japonés", type: "sustantivo" },
+      { jp: "えいご", romaji: "eego", es: "Idioma inglés", type: "sustantivo" },
+      { jp: "スペインご", romaji: "supeingo", es: "Idioma español", type: "sustantivo" },
+      { jp: "フランスご", romaji: "furansugo", es: "Idioma francés", type: "sustantivo" },
+      { jp: "ちゅうごくご", romaji: "chuugokugo", es: "Idioma chino", type: "sustantivo" },
+      { jp: "かんこくご", romaji: "kankokugo", es: "Idioma coreano", type: "sustantivo" },
+      { jp: "ロシアご", romaji: "roshiago", es: "Idioma ruso", type: "sustantivo" },
+      { jp: "ドイツご", romaji: "doitsugo", es: "Idioma alemán", type: "sustantivo" },
+    ]
+  },
+  "だい２": {
+    label: "Lección 2 — Objetos y pronombres",
+    words: [
+      { jp: "つくえ", romaji: "tsukue", es: "Escritorio", type: "sustantivo" },
+      { jp: "いす", romaji: "isu", es: "Silla", type: "sustantivo" },
+      { jp: "テレビ", romaji: "terebi", es: "Televisión", type: "sustantivo" },
+      { jp: "とけい", romaji: "tokee", es: "Reloj", type: "sustantivo" },
+      { jp: "かばん", romaji: "kaban", es: "Bolso / maletín", type: "sustantivo" },
+      { jp: "かさ", romaji: "kasa", es: "Paraguas", type: "sustantivo" },
+      { jp: "しゅくだい", romaji: "shukudai", es: "Tarea escolar", type: "sustantivo" },
+      { jp: "ちず", romaji: "chizu", es: "Mapa", type: "sustantivo" },
+      { jp: "これ", romaji: "kore", es: "Este / esto (cerca del hablante)", type: "pronombre" },
+      { jp: "それ", romaji: "sore", es: "Ese / eso (cerca del oyente)", type: "pronombre" },
+      { jp: "あれ", romaji: "are", es: "Aquel / aquello (lejos de ambos)", type: "pronombre" },
+      { jp: "なに / なん", romaji: "nani / nan", es: "¿Qué?", type: "pregunta" },
+    ]
+  },
+  "だい３": {
+    label: "Lección 3 — Compras",
+    words: [
+      { jp: "ハンバーガー", romaji: "hanbaagaa", es: "Hamburguesa", type: "sustantivo" },
+      { jp: "ドーナッツ", romaji: "doonattsu", es: "Dona / rosquilla", type: "sustantivo" },
+      { jp: "ホットドッグ", romaji: "hottodoggu", es: "Hot dog", type: "sustantivo" },
+      { jp: "ケーキ", romaji: "keeki", es: "Pastel / torta", type: "sustantivo" },
+      { jp: "アイスクリーム", romaji: "aisukuriimu", es: "Helado", type: "sustantivo" },
+      { jp: "コーヒー", romaji: "koohii", es: "Café", type: "sustantivo" },
+      { jp: "サンドイッチ", romaji: "sandoicchi", es: "Sándwich", type: "sustantivo" },
+      { jp: "おつり", romaji: "otsuri", es: "Cambio / vuelto", type: "sustantivo" },
+      { jp: "きって", romaji: "kitte", es: "Sello / estampilla", type: "sustantivo" },
+      { jp: "シーディー", romaji: "shiidii", es: "CD (disco compacto)", type: "sustantivo" },
+      { jp: "シャツ", romaji: "shatsu", es: "Camisa", type: "sustantivo" },
+      { jp: "たかい", romaji: "takai", es: "Caro / alto", type: "adjetivo-i" },
+      { jp: "やすい", romaji: "yasui", es: "Barato", type: "adjetivo-i" },
+      { jp: "おおきい", romaji: "ookii", es: "Grande", type: "adjetivo-i" },
+      { jp: "ちいさい", romaji: "chiisai", es: "Pequeño", type: "adjetivo-i" },
+    ]
+  },
+  "だい４": {
+    label: "Lección 4 — Ubicaciones",
+    words: [
+      { jp: "ぎんこう", romaji: "ginkoo", es: "Banco", type: "sustantivo" },
+      { jp: "ゆうびんきょく", romaji: "yuubinkyoku", es: "Oficina de correos", type: "sustantivo" },
+      { jp: "えき", romaji: "eki", es: "Estación de tren", type: "sustantivo" },
+      { jp: "びょういん", romaji: "byooin", es: "Hospital", type: "sustantivo" },
+      { jp: "ホテル", romaji: "hoteru", es: "Hotel", type: "sustantivo" },
+      { jp: "プール", romaji: "puuru", es: "Piscina", type: "sustantivo" },
+      { jp: "きょうしつ", romaji: "kyooshitsu", es: "Salón de clases / aula", type: "sustantivo" },
+      { jp: "いえ / うち", romaji: "ie / uchi", es: "Casa / hogar", type: "sustantivo" },
+      { jp: "こうえん", romaji: "kooen", es: "Parque", type: "sustantivo" },
+      { jp: "でんわ", romaji: "denwa", es: "Teléfono", type: "sustantivo" },
+      { jp: "ポスト", romaji: "posuto", es: "Buzón de correo", type: "sustantivo" },
+      { jp: "テーブル", romaji: "teeburu", es: "Mesa", type: "sustantivo" },
+      { jp: "ねこ", romaji: "neko", es: "Gato", type: "sustantivo" },
+      { jp: "あります", romaji: "arimasu", es: "Hay / está / existe (cosa inanimada)", type: "verbo" },
+      { jp: "います", romaji: "imasu", es: "Hay / está / existe (persona o animal)", type: "verbo" },
+      { jp: "まえ", romaji: "mae", es: "Delante / frente", type: "posición" },
+      { jp: "うしろ", romaji: "ushiro", es: "Detrás", type: "posición" },
+      { jp: "なか", romaji: "naka", es: "Dentro / adentro", type: "posición" },
+      { jp: "そと", romaji: "soto", es: "Afuera / exterior", type: "posición" },
+      { jp: "ちかい", romaji: "chikai", es: "Cercano / cerca", type: "adjetivo-i" },
+      { jp: "とおい", romaji: "tooi", es: "Lejano / lejos", type: "adjetivo-i" },
+    ]
+  },
+  "だい５": {
+    label: "Lección 5 — Fechas y días",
+    words: [
+      { jp: "にちようび", romaji: "nichiyoobi", es: "Domingo", type: "sustantivo" },
+      { jp: "げつようび", romaji: "getsuyoobi", es: "Lunes", type: "sustantivo" },
+      { jp: "かようび", romaji: "kayoobi", es: "Martes", type: "sustantivo" },
+      { jp: "すいようび", romaji: "suiyoobi", es: "Miércoles", type: "sustantivo" },
+      { jp: "もくようび", romaji: "mokuyoobi", es: "Jueves", type: "sustantivo" },
+      { jp: "きんようび", romaji: "kinyoobi", es: "Viernes", type: "sustantivo" },
+      { jp: "どようび", romaji: "doyoobi", es: "Sábado", type: "sustantivo" },
+      { jp: "いちがつ", romaji: "ichigatsu", es: "Enero", type: "sustantivo" },
+      { jp: "にがつ", romaji: "nigatsu", es: "Febrero", type: "sustantivo" },
+      { jp: "さんがつ", romaji: "sangatsu", es: "Marzo", type: "sustantivo" },
+      { jp: "しがつ", romaji: "shigatsu", es: "Abril", type: "sustantivo" },
+      { jp: "ごがつ", romaji: "gogatsu", es: "Mayo", type: "sustantivo" },
+      { jp: "ろくがつ", romaji: "rokugatsu", es: "Junio", type: "sustantivo" },
+      { jp: "しちがつ", romaji: "shichigatsu", es: "Julio", type: "sustantivo" },
+      { jp: "はちがつ", romaji: "hachigatsu", es: "Agosto", type: "sustantivo" },
+      { jp: "くがつ", romaji: "kugatsu", es: "Septiembre", type: "sustantivo" },
+      { jp: "じゅうがつ", romaji: "juugatsu", es: "Octubre", type: "sustantivo" },
+      { jp: "じゅういちがつ", romaji: "juuichigatsu", es: "Noviembre", type: "sustantivo" },
+      { jp: "じゅうにがつ", romaji: "juunigatsu", es: "Diciembre", type: "sustantivo" },
+      { jp: "きょう", romaji: "kyoo", es: "Hoy", type: "sustantivo" },
+      { jp: "あした", romaji: "ashita", es: "Mañana", type: "sustantivo" },
+      { jp: "きのう", romaji: "kinoo", es: "Ayer", type: "sustantivo" },
+    ]
+  },
+  "だい６": {
+    label: "Lección 6 — Verbos cotidianos",
+    words: [
+      { jp: "のみます", romaji: "nomimasu", es: "Beber / tomar", type: "verbo" },
+      { jp: "かきます", romaji: "kakimasu", es: "Escribir", type: "verbo" },
+      { jp: "ききます", romaji: "kikimasu", es: "Escuchar / oir", type: "verbo" },
+      { jp: "よみます", romaji: "yomimasu", es: "Leer", type: "verbo" },
+      { jp: "かいます", romaji: "kaimasu", es: "Comprar", type: "verbo" },
+      { jp: "やすみます", romaji: "yasumimasu", es: "Descansar", type: "verbo" },
+      { jp: "はなします", romaji: "hanashimasu", es: "Hablar", type: "verbo" },
+      { jp: "つくります", romaji: "tsukurimasu", es: "Hacer / fabricar / cocinar", type: "verbo" },
+      { jp: "はじまります", romaji: "hajimarimasu", es: "Comenzar / empezar", type: "verbo" },
+      { jp: "おわります", romaji: "owarimasu", es: "Terminar / acabar", type: "verbo" },
+      { jp: "たべます", romaji: "tabemasu", es: "Comer", type: "verbo" },
+      { jp: "かけます", romaji: "kakemasu", es: "Llamar por teléfono", type: "verbo" },
+      { jp: "ねます", romaji: "nemasu", es: "Dormir / acostarse", type: "verbo" },
+      { jp: "おきます", romaji: "okimasu", es: "Levantarse / despertar", type: "verbo" },
+      { jp: "いきます", romaji: "ikimasu", es: "Ir", type: "verbo" },
+      { jp: "きます", romaji: "kimasu", es: "Venir", type: "verbo" },
+      { jp: "かえります", romaji: "kaerimasu", es: "Regresar / volver a casa", type: "verbo" },
+      { jp: "します", romaji: "shimasu", es: "Hacer (general)", type: "verbo" },
+      { jp: "べんきょうします", romaji: "benkyoo shimasu", es: "Estudiar", type: "verbo" },
+      { jp: "しごとします", romaji: "shigoto shimasu", es: "Trabajar", type: "verbo" },
+    ]
+  },
+  "だい７": {
+    label: "Lección 7 — Adjetivos",
+    words: [
+      { jp: "おいしい", romaji: "oishii", es: "Sabroso / delicioso", type: "adjetivo-i" },
+      { jp: "まずい", romaji: "mazui", es: "Desabrido / feo (sabor)", type: "adjetivo-i" },
+      { jp: "あつい", romaji: "atsui", es: "Caliente / hace calor", type: "adjetivo-i" },
+      { jp: "さむい", romaji: "samui", es: "Frío (temperatura)", type: "adjetivo-i" },
+      { jp: "つめたい", romaji: "tsumetai", es: "Frío al tacto (bebida, agua)", type: "adjetivo-i" },
+      { jp: "いそがしい", romaji: "isogashii", es: "Ocupado", type: "adjetivo-i" },
+      { jp: "むずかしい", romaji: "muzukashii", es: "Difícil", type: "adjetivo-i" },
+      { jp: "やさしい", romaji: "yasashii", es: "Fácil / amable", type: "adjetivo-i" },
+      { jp: "おもしろい", romaji: "omoshiroi", es: "Interesante / divertido", type: "adjetivo-i" },
+      { jp: "つまらない", romaji: "tsumaranai", es: "Aburrido", type: "adjetivo-i" },
+      { jp: "きれい", romaji: "kiree", es: "Bonito / limpio", type: "adjetivo-na" },
+      { jp: "しずか", romaji: "shizuka", es: "Tranquilo / silencioso", type: "adjetivo-na" },
+      { jp: "にぎやか", romaji: "nigiyaka", es: "Animado / bullicioso", type: "adjetivo-na" },
+      { jp: "げんき", romaji: "genki", es: "Saludable / con energía", type: "adjetivo-na" },
+      { jp: "すき", romaji: "suki", es: "Que le gusta a uno", type: "adjetivo-na" },
+      { jp: "きらい", romaji: "kirai", es: "Que le disgusta a uno", type: "adjetivo-na" },
+      { jp: "じょうず", romaji: "joozu", es: "Hábil / bueno en algo", type: "adjetivo-na" },
+      { jp: "へた", romaji: "heta", es: "Malo en algo / torpe", type: "adjetivo-na" },
+    ]
+  }
+};
+
+const LESSONS = Object.keys(VOCAB);
+
+let currentLesson = LESSONS[0];
+let queue = [];
+let currentIdx = 0;
+let currentOptions = [];
+let answered = false;
+let stats = { correct: 0, wrong: 0 };
+let loadingOptions = false;
+
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = '<div class="sidebar-label">Secciones</div>';
+  LESSONS.forEach(key => {
+    const lesson = VOCAB[key];
+    const btn = document.createElement('button');
+    btn.className = 'lesson-btn' + (key === currentLesson ? ' active' : '');
+    btn.innerHTML = `${lesson.label} <span class="count">${lesson.words.length}</span><span class="jp">${key}</span>`;
+    btn.onclick = () => selectLesson(key);
+    sidebar.appendChild(btn);
+  });
+}
+
+function selectLesson(key) {
+  currentLesson = key;
+  stats = { correct: 0, wrong: 0 };
+  document.querySelectorAll('.lesson-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.lesson-btn')[LESSONS.indexOf(key)].classList.add('active');
+  document.getElementById('completeScreen').classList.remove('show');
+  document.getElementById('quizArea').style.display = '';
+  startLesson();
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startLesson() {
+  const words = VOCAB[currentLesson].words;
+  queue = shuffle(words);
+  currentIdx = 0;
+  stats = { correct: 0, wrong: 0 };
+  updateStats();
+  showCard();
+}
+
+function updateStats() {
+  document.getElementById('statCorrect').textContent = stats.correct;
+  document.getElementById('statWrong').textContent = stats.wrong;
+  const total = stats.correct + stats.wrong;
+  document.getElementById('statPct').textContent = total ? Math.round(stats.correct / total * 100) + '%' : '—';
+  const pct = queue.length ? Math.round(currentIdx / queue.length * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${currentIdx} / ${queue.length}`;
+}
+
+async function showCard() {
+  if (currentIdx >= queue.length) {
+    showComplete();
+    return;
+  }
+
+  const word = queue[currentIdx];
+  document.getElementById('wordJp').textContent = word.jp;
+  document.getElementById('wordRomaji').textContent = word.romaji;
+  document.getElementById('cardLesson').textContent = VOCAB[currentLesson].label;
+  document.getElementById('cardType').textContent = word.type;
+  document.getElementById('feedbackMsg').textContent = '';
+  document.getElementById('feedbackMsg').className = 'feedback-msg';
+  document.getElementById('nextBtn').classList.remove('visible');
+  document.getElementById('optionsGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:1rem;color:var(--text-hint);font-size:0.8rem"><div class="loading-dots"><span></span><span></span><span></span></div> generando opciones…</div>';
+  document.getElementById('errorNotice').style.display = 'none';
+  answered = false;
+
+  const options = await generateOptions(word);
+  currentOptions = options;
+  renderOptions(options, word);
+  updateStats();
+}
+
+async function generateOptions(word) {
+  const allWords = LESSONS.flatMap(k => VOCAB[k].words);
+  const pool = allWords.filter(w => w.es !== word.es);
+
+  try {
+    const otherAnswers = shuffle(pool).slice(0, 8).map(w => w.es).join(', ');
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `Eres un asistente para generar opciones incorrectas en un quiz de vocabulario japonés. 
+Responde SOLO con un array JSON de exactamente 2 strings, sin ningún texto adicional, sin markdown, sin explicaciones.
+Las opciones incorrectas deben ser plausibles pero claramente distintas del significado correcto.
+Deben estar en español, ser breves (máximo 5 palabras), y no repetirse entre sí ni coincidir con el significado correcto.`,
+        messages: [{
+          role: 'user',
+          content: `La palabra japonesa es "${word.jp}" (${word.romaji}).
+Su significado correcto en español es: "${word.es}".
+Tipo de palabra: ${word.type}.
+Algunas otras palabras del vocabulario disponible: ${otherAnswers}.
+
+Genera exactamente 2 traducciones incorrectas pero plausibles. Responde SOLO el array JSON, por ejemplo: ["opción1","opción2"]`
+        }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('API error');
+    const data = await resp.json();
+    const text = data.content.map(c => c.text || '').join('');
+    const parsed = JSON.parse(text.trim());
+    if (!Array.isArray(parsed) || parsed.length < 2) throw new Error('bad response');
+
+    const options = shuffle([word.es, parsed[0], parsed[1]]);
+    return options;
+  } catch (e) {
+    // Fallback: pick 2 random from pool
+    const fallback = shuffle(pool).slice(0, 2).map(w => w.es);
+    return shuffle([word.es, ...fallback]);
+  }
+}
+
+function renderOptions(options, word) {
+  const grid = document.getElementById('optionsGrid');
+  grid.innerHTML = '';
+  const letters = ['A', 'B', 'C'];
+  options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span>${opt}`;
+    btn.onclick = () => selectOption(btn, opt, word.es, options);
+    grid.appendChild(btn);
+  });
+}
+
+function selectOption(btn, selected, correct, options) {
+  if (answered) return;
+  answered = true;
+
+  const allBtns = document.querySelectorAll('.option-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  const isCorrect = selected === correct;
+
+  if (isCorrect) {
+    btn.classList.add('selected-correct');
+    stats.correct++;
+    const msg = document.getElementById('feedbackMsg');
+    msg.textContent = '✓ Correcto';
+    msg.className = 'feedback-msg correct';
+  } else {
+    btn.classList.add('selected-wrong');
+    stats.wrong++;
+    // Reveal correct answer
+    allBtns.forEach(b => {
+      const txt = b.textContent.replace(/^[ABC]\s*/, '').trim();
+      if (txt === correct || b.innerHTML.includes(correct)) {
+        b.classList.add('reveal-correct');
+      }
+    });
+    const msg = document.getElementById('feedbackMsg');
+    msg.textContent = `✗ Era: ${correct}`;
+    msg.className = 'feedback-msg wrong';
+  }
+
+  updateStats();
+  document.getElementById('nextBtn').classList.add('visible');
+}
+
+function nextCard() {
+  currentIdx++;
+  showCard();
+}
+
+function showComplete() {
+  document.getElementById('completeScreen').classList.add('show');
+  const total = stats.correct + stats.wrong;
+  const pct = total ? Math.round(stats.correct / total * 100) : 0;
+  document.getElementById('completeSc').textContent = `${stats.correct} / ${total} correctas (${pct}%)`;
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('progressText').textContent = `${queue.length} / ${queue.length}`;
+}
+
+function restartLesson() {
+  document.getElementById('completeScreen').classList.remove('show');
+  startLesson();
+}
+
+let romajiVisible = true;
+
+function toggleRomaji() {
+  romajiVisible = !romajiVisible;
+  const track = document.getElementById('romajiTrack');
+  const romaji = document.getElementById('wordRomaji');
+  track.classList.toggle('on', romajiVisible);
+  romaji.classList.toggle('hidden', !romajiVisible);
+}
+
+buildSidebar();
+startLesson();
+</script>
+</body>
+</html>
